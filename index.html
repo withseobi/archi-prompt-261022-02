@@ -1,0 +1,1918 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>WiTH Architecture Prompt Builder</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="건축 유형·재료·건축가 레퍼런스를 클릭해서 Midjourney·ChatGPT·Gemini용 프롬프트를 자동으로 완성하는 도구" />
+<script>
+(function(){
+  var style = 'concrete';
+  try{ style = localStorage.getItem('archPromptStyle') || 'concrete'; }catch(e){}
+  document.documentElement.setAttribute('data-style', style);
+})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Stencil+Display:wght@500;700;800&family=Black+Han+Sans&family=Gowun+Batang:wght@700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#DAD7CD;
+    --surface:#FFFFFF;
+    --surface-raised:#FFFFFF;
+    --ink:#24262A;
+    --ink-soft:#5B5D57;
+    --ink-faint:#84867F;
+    --accent:#2C5FCC;
+    --accent-2:#2C5FCC;
+    --accent-2-ink:#FFFFFF;
+    --line:#C7C4BA;
+    --line-strong:#A8A499;
+    --focus:#2C5FCC;
+    --accent-3:#2C5FCC;
+
+    --font-display:'Big Shoulders Stencil Display','Bahnschrift','Arial Narrow',sans-serif;
+    --font-headline:'Black Han Sans','Malgun Gothic','Apple SD Gothic Neo',sans-serif;
+    --font-mono:'JetBrains Mono','Cascadia Code','Consolas','SFMono-Regular',Menlo,monospace;
+    --font-body:'Pretendard','Malgun Gothic','Segoe UI',sans-serif;
+  }
+  /* ---- style 1: 블루프린트 (청사진 도면) ---- */
+  :root[data-style="blueprint"]{
+    --bg:#0A2340;
+    --surface:#123458;
+    --surface-raised:#173F68;
+    --ink:#EAF4FF;
+    --ink-soft:#9FC3E8;
+    --ink-faint:#6E93B8;
+    --accent:#8FD1FF;
+    --accent-2:#F2A93B;
+    --accent-2-ink:#2A1A00;
+    --line:rgba(191,227,255,0.28);
+    --line-strong:rgba(191,227,255,0.45);
+    --focus:#8FD1FF;
+    --accent-3:#F2A93B;
+  }
+  /* ---- style 2: 크래프트 콘셉트 보드 ---- */
+  :root[data-style="kraft"]{
+    --bg:#C7A967;
+    --surface:#DFC891;
+    --surface-raised:#E9D9AE;
+    --ink:#2E2418;
+    --ink-soft:#5A4A2E;
+    --ink-faint:#8A754E;
+    --accent:#46586B;
+    --accent-2:#6B4423;
+    --accent-2-ink:#F1EFE6;
+    --line:rgba(46,36,24,0.22);
+    --line-strong:rgba(46,36,24,0.38);
+    --focus:#46586B;
+    --accent-3:#8A6F42;
+  }
+  /* ---- style 3: 노출콘크리트 입면 ---- */
+  :root[data-style="concrete"]{
+    --bg:#DAD7CD;
+    --surface:#FFFFFF;
+    --surface-raised:#FFFFFF;
+    --ink:#24262A;
+    --ink-soft:#5B5D57;
+    --ink-faint:#84867F;
+    --accent:#2C5FCC;
+    --accent-2:#2C5FCC;
+    --accent-2-ink:#FFFFFF;
+    --line:#C7C4BA;
+    --line-strong:#A8A499;
+    --focus:#2C5FCC;
+    --accent-3:#2C5FCC;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    color:var(--ink);
+    font-family:var(--font-body);
+    background:var(--bg);
+    background-attachment:fixed;
+    -webkit-font-smoothing:antialiased;
+  }
+  :root[data-style="blueprint"] body{
+    background:
+      repeating-linear-gradient(0deg, rgba(191,227,255,0.10) 0 1px, transparent 1px 24px),
+      repeating-linear-gradient(90deg, rgba(191,227,255,0.10) 0 1px, transparent 1px 24px),
+      repeating-linear-gradient(0deg, rgba(191,227,255,0.22) 0 1.5px, transparent 1.5px 120px),
+      repeating-linear-gradient(90deg, rgba(191,227,255,0.22) 0 1.5px, transparent 1.5px 120px),
+      linear-gradient(160deg, #123458 0%, #0A2340 100%);
+    background-attachment:fixed;
+  }
+  :root[data-style="kraft"] body{
+    background:
+      repeating-linear-gradient(45deg, rgba(46,36,24,0.05) 0 1px, transparent 1px 11px),
+      repeating-linear-gradient(-45deg, rgba(46,36,24,0.035) 0 1px, transparent 1px 11px),
+      linear-gradient(155deg, #C7A967 0%, #B08F52 100%);
+    background-attachment:fixed;
+  }
+  :root[data-style="concrete"] body{
+    background:
+      radial-gradient(circle, rgba(36,38,42,0.10) 1.4px, transparent 1.4px) 0 0/28px 28px,
+      linear-gradient(165deg, #DFDCD2 0%, #CBC8BB 100%);
+    background-attachment:fixed;
+  }
+  ::selection{ background:var(--accent-2); color:var(--accent-2-ink); }
+
+  .wrap{ max-width:1240px; margin:0 auto; padding:28px 20px 120px; }
+
+  header.hero{
+    display:flex; flex-direction:column; gap:6px;
+    padding-bottom:20px; margin-bottom:24px;
+    border-bottom:2px solid var(--line-strong);
+  }
+  .eyebrow{
+    font-family:var(--font-display); font-size:13px; letter-spacing:0.1em;
+    text-transform:uppercase; color:var(--accent); font-weight:700;
+  }
+  h1{
+    font-family:var(--font-headline); font-weight:700;
+    font-size:clamp(30px,4.2vw,46px); letter-spacing:0;
+    margin:2px 0 4px; text-wrap:balance; color:var(--ink);
+  }
+  .lede{ color:var(--ink-soft); font-size:15px; max-width:640px; line-height:1.55; margin:0; }
+
+  .layout{
+    display:grid;
+    grid-template-columns:1fr 360px;
+    gap:24px;
+    align-items:start;
+  }
+  @media (max-width:920px){
+    .layout{ grid-template-columns:1fr; }
+  }
+
+  .panel{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:2px;
+    position:relative;
+    padding:20px 20px 22px;
+  }
+  .panel::before, .panel::after{
+    content:""; position:absolute; width:10px; height:10px;
+    border-color:var(--line-strong); pointer-events:none;
+  }
+  .panel::before{ top:-1px; left:-1px; border-top:2px solid var(--line-strong); border-left:2px solid var(--line-strong); }
+  .panel::after{ bottom:-1px; right:-1px; border-bottom:2px solid var(--line-strong); border-right:2px solid var(--line-strong); }
+
+  .sections{ display:flex; flex-direction:column; gap:22px; }
+
+  .section-head{
+    display:flex; align-items:baseline; gap:10px; margin-bottom:12px;
+  }
+  .sheet-code{
+    font-family:var(--font-display); font-size:15px; color:var(--accent-2);
+    font-weight:700; letter-spacing:0.04em;
+  }
+  .section-title{
+    font-family:var(--font-body); font-size:17px; font-weight:700; color:var(--ink);
+    letter-spacing:0;
+  }
+  .section-sub{
+    font-family:var(--font-mono); font-size:11px; color:var(--ink-faint);
+    text-transform:uppercase; letter-spacing:0.08em; margin-left:auto;
+  }
+
+  .chip-grid{ display:flex; flex-wrap:wrap; gap:8px; }
+  .chip{
+    display:flex; flex-direction:column; align-items:flex-start; gap:2px;
+    padding:8px 12px;
+    border:1px solid var(--line);
+    background:var(--surface-raised);
+    border-radius:2px;
+    cursor:pointer;
+    color:var(--ink);
+    font-family:var(--font-body);
+    position:relative;
+    transition:border-color .12s ease, background .12s ease, transform .1s ease, box-shadow .12s ease;
+    text-align:left;
+  }
+  .chip:hover{ border-color:var(--accent); transform:translateY(-2px); box-shadow:0 4px 10px -4px color-mix(in srgb, var(--ink) 35%, transparent); }
+  .chip:active{ transform:translateY(0); box-shadow:none; }
+  .chip:focus-visible{ outline:2px solid var(--focus); outline-offset:2px; }
+  .chip .ko{ font-size:13.5px; font-weight:600; line-height:1.2; }
+  .chip .nat{ font-family:var(--font-body); font-size:11px; font-weight:400; color:var(--ink-faint); }
+  .chip .en{ font-family:var(--font-mono); font-size:10.5px; color:var(--ink-faint); letter-spacing:0.02em; }
+  .chip.selected{
+    background:var(--accent-2); border-color:var(--accent-2);
+    box-shadow:0 3px 0 0 color-mix(in srgb, var(--accent-2) 55%, black);
+  }
+  .chip.selected:hover{ transform:translateY(-2px); }
+  .chip.selected::after{
+    content:"✓"; position:absolute; top:5px; right:7px;
+    font-size:10px; font-weight:700; color:var(--accent-2-ink); opacity:0.75;
+  }
+  .chip.selected .ko{ color:var(--accent-2-ink); padding-right:14px; }
+  .chip.selected .nat{ color:var(--accent-2-ink); opacity:0.8; }
+  .chip.selected .en{ color:var(--accent-2-ink); opacity:0.8; }
+
+  .hint{ font-family:var(--font-mono); font-size:10.5px; color:var(--ink-faint); margin-top:6px; letter-spacing:0.02em; }
+
+  textarea.extra{
+    width:100%; resize:vertical; min-height:56px;
+    font-family:var(--font-body); font-size:13.5px; color:var(--ink);
+    background:var(--surface-raised); border:1px solid var(--line); border-radius:2px;
+    padding:10px 12px; line-height:1.5;
+  }
+  textarea.extra:focus-visible, input:focus-visible{ outline:2px solid var(--focus); outline-offset:1px; }
+
+  /* output rail */
+  .output-rail{ position:sticky; top:20px; display:flex; flex-direction:column; gap:14px; }
+
+  .preset-btn{
+    display:flex; flex-direction:column; align-items:flex-start; gap:3px;
+    width:100%; text-align:left; cursor:pointer;
+    padding:12px 14px; border:1.5px solid var(--accent-3); border-radius:2px;
+    background:color-mix(in srgb, var(--accent-3) 12%, var(--surface));
+    transition:background .12s ease, transform .1s ease;
+  }
+  .preset-btn:hover{ background:color-mix(in srgb, var(--accent-3) 22%, var(--surface)); transform:translateY(-1px); }
+  .preset-btn:active{ transform:translateY(0); }
+  .preset-btn-title{
+    font-family:var(--font-display); font-size:15px; font-weight:700; letter-spacing:0.02em;
+    color:var(--accent-3);
+  }
+  .preset-btn-sub{
+    font-family:var(--font-body); font-size:11.5px; color:var(--ink-soft); line-height:1.4;
+  }
+  .preset-btn.applied{ background:color-mix(in srgb, var(--accent-3) 30%, var(--surface)); }
+
+  .mode-switch{
+    display:flex; align-items:center; gap:9px;
+    font-family:var(--font-mono); font-size:11.5px; color:var(--ink-soft);
+    letter-spacing:0.02em; cursor:pointer; user-select:none;
+    padding:10px 12px; border:1px solid var(--line); background:var(--surface); border-radius:2px;
+  }
+  .mode-switch input{ accent-color:var(--accent-2); width:15px; height:15px; cursor:pointer; }
+
+  .platform-toggle{
+    display:flex; border:1px solid var(--line-strong); border-radius:2px; overflow:hidden;
+  }
+  .platform-toggle button{
+    flex:1; padding:12px 8px; border:none; background:var(--surface-raised);
+    font-family:var(--font-display); font-size:14px; letter-spacing:0.05em; text-transform:uppercase;
+    color:var(--ink-soft); cursor:pointer; border-right:1px solid var(--line-strong);
+  }
+  .platform-toggle button:last-child{ border-right:none; }
+  .platform-toggle button.active{ background:var(--accent); color:var(--surface); font-weight:700; }
+
+  .titleblock{
+    background:var(--surface); border:1px solid var(--line); padding:18px;
+    position:relative;
+  }
+  .titleblock::before, .titleblock::after{
+    content:""; position:absolute; width:10px; height:10px;
+    pointer-events:none;
+  }
+  .titleblock::before{ top:-1px; left:-1px; border-top:2px solid var(--line-strong); border-left:2px solid var(--line-strong); }
+  .titleblock::after{ bottom:-1px; right:-1px; border-bottom:2px solid var(--line-strong); border-right:2px solid var(--line-strong); }
+
+  .titleblock-label{
+    font-family:var(--font-mono); font-size:10.5px; color:var(--ink-faint);
+    text-transform:uppercase; letter-spacing:0.1em; margin-bottom:8px;
+  }
+  .prompt-out{
+    font-family:var(--font-mono); font-size:13px; line-height:1.65; color:var(--ink);
+    white-space:pre-wrap; word-break:break-word; min-height:120px;
+  }
+  .prompt-out .tag{ color:var(--accent-2); }
+
+  .row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  select, input.textfield{
+    font-family:var(--font-mono); font-size:12px; color:var(--ink);
+    background:var(--surface-raised); border:1px solid var(--line-strong); border-radius:2px;
+    padding:7px 8px;
+  }
+  label.field-label{
+    font-family:var(--font-mono); font-size:10.5px; color:var(--ink-faint);
+    text-transform:uppercase; letter-spacing:0.08em; display:block; margin-bottom:5px;
+  }
+
+  .chaos-row{ margin-top:14px; padding-top:14px; border-top:1px solid var(--line); }
+  .chaos-row input[type="range"]{
+    flex:1; accent-color:var(--accent-2); cursor:pointer; height:4px;
+  }
+  .chaos-value{
+    font-family:var(--font-mono); font-size:13px; font-weight:700; color:var(--accent-2);
+    min-width:28px; text-align:right;
+  }
+
+  .copy-btn{
+    width:100%; padding:14px; border:none; border-radius:2px;
+    background:var(--accent); color:var(--surface);
+    font-family:var(--font-body); font-size:15px; font-weight:700; letter-spacing:0.01em;
+    cursor:pointer; transition:opacity .12s ease, transform .06s ease;
+  }
+  .copy-btn:hover{ opacity:0.88; }
+  .copy-btn:active{ transform:translateY(1px); }
+  .copy-btn.copied{ background:var(--accent-2); color:var(--accent-2-ink); }
+
+  .reset-btn{
+    background:none; border:none; color:var(--ink-faint); font-family:var(--font-mono);
+    font-size:11px; text-decoration:underline; cursor:pointer; padding:2px 0; align-self:flex-start;
+  }
+  .reset-btn:hover{ color:var(--accent-2); }
+
+  .site-ref-head{
+    cursor:pointer; user-select:none; padding:10px 12px; margin:-10px -12px 0;
+    border-radius:2px; transition:background .12s ease;
+  }
+  .site-ref-head:hover{ background:color-mix(in srgb, var(--accent-3) 10%, transparent); }
+  .site-ref-head:focus-visible{ outline:2px solid var(--focus); outline-offset:2px; }
+  .site-ref-head .section-sub{ color:var(--accent-3); text-transform:none; font-style:normal; }
+  .site-ref-chevron{
+    font-family:var(--font-mono); font-size:13px; color:var(--ink-faint); margin-left:8px;
+    transition:transform .16s ease;
+  }
+  .site-ref-head[aria-expanded="true"] .site-ref-chevron{ transform:rotate(180deg); }
+  .site-ref-body{
+    margin-top:16px; padding-top:16px; border-top:1px dashed var(--line-strong);
+  }
+  .upload-group{ margin-top:14px; padding-top:14px; border-top:1px solid var(--line); }
+  .upload-group:first-of-type{ margin-top:0; padding-top:0; border-top:none; }
+  .upload-group-title{ font-family:var(--font-body); font-size:12.5px; font-weight:700; color:var(--ink); margin-bottom:6px; }
+  .upload-group-desc{ font-family:var(--font-mono); font-size:10.5px; color:var(--ink-faint); margin-bottom:8px; line-height:1.5; }
+  .upload-dropzone{
+    border:1.5px dashed var(--line-strong); border-radius:4px; padding:10px;
+    transition:border-color .12s ease, background .12s ease;
+  }
+  .upload-dropzone.drag-over{
+    border-color:var(--accent); background:color-mix(in srgb, var(--accent) 8%, transparent);
+  }
+  .upload-drop-hint{
+    font-family:var(--font-mono); font-size:10px; color:var(--ink-faint); margin-top:6px;
+  }
+  .upload-btn-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .upload-btn{
+    font-family:var(--font-mono); font-size:11px; letter-spacing:0.02em;
+    color:var(--ink); background:var(--surface-raised); border:1px solid var(--line-strong);
+    border-radius:2px; padding:7px 11px; cursor:pointer; display:inline-flex; align-items:center; gap:6px;
+  }
+  .upload-btn:hover{ border-color:var(--accent); color:var(--accent); }
+  .upload-count{ font-family:var(--font-mono); font-size:10.5px; color:var(--ink-faint); }
+  .thumb-row{ display:flex; flex-wrap:wrap; gap:6px; margin:8px 0 0; }
+  .thumb-row:empty{ margin:0; }
+  .thumb{ position:relative; width:50px; height:50px; border:1px solid var(--line-strong); border-radius:2px; overflow:hidden; background:var(--surface-raised); flex-shrink:0; }
+  .thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .thumb button{
+    position:absolute; top:0; right:0; width:16px; height:16px; line-height:14px; font-size:12px;
+    border:none; background:rgba(0,0,0,0.6); color:#fff; cursor:pointer; padding:0; font-family:var(--font-mono);
+  }
+  .thumb button:hover{ background:var(--accent-2); }
+  textarea.upload-notes{ min-height:44px; font-size:12.5px; margin-top:8px; }
+  .upload-summary{ margin-top:12px; padding-top:12px; border-top:1px solid var(--line); color:var(--accent-2); }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition:none !important; }
+  }
+
+  /* ---- grain / paper texture ---- */
+  body::before{
+    content:"";
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    opacity:0.5;
+    mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.035 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+  :root[data-style="blueprint"] body::before{ mix-blend-mode:screen; opacity:0.3; }
+  :root[data-style="kraft"] body::before{ mix-blend-mode:multiply; opacity:0.4; }
+  :root[data-style="concrete"] body::before{ mix-blend-mode:multiply; opacity:0.35; }
+  .wrap{ position:relative; z-index:1; }
+
+  /* ---- hero line-art ---- */
+  header.hero{ position:relative; overflow:hidden; }
+  .hero-sketch{
+    position:absolute; top:-18px; right:-10px; width:260px; height:auto;
+    opacity:0.16; color:var(--accent); pointer-events:none;
+  }
+  :root[data-style="blueprint"] .hero-sketch{ opacity:0.22; }
+  :root[data-style="kraft"] .hero-sketch{ opacity:0.14; }
+  :root[data-style="concrete"] .hero-sketch{ opacity:0.10; }
+  .hero-text{ position:relative; z-index:1; }
+
+  /* ---- style switch (3 background themes) ---- */
+  .style-switch{
+    position:absolute; top:20px; right:20px; z-index:2;
+    display:flex; align-items:center; gap:6px;
+    background:var(--surface-raised); border:1px solid var(--line-strong);
+    padding:6px; border-radius:20px;
+  }
+  .style-swatch{
+    width:22px; height:22px; border-radius:50%; padding:0; cursor:pointer;
+    border:2px solid transparent; position:relative;
+    transition:border-color .12s ease, transform .1s ease;
+  }
+  .style-swatch:hover{ transform:translateY(-1px); }
+  .style-swatch:focus-visible{ outline:2px solid var(--focus); outline-offset:2px; }
+  .style-swatch[aria-pressed="true"]{ border-color:var(--ink); }
+  .style-swatch .sw-fill{
+    display:block; width:100%; height:100%; border-radius:50%;
+    border:1px solid rgba(0,0,0,0.15);
+  }
+  .style-swatch[data-style="blueprint"] .sw-fill{ background:linear-gradient(135deg,#123458,#8FD1FF); }
+  .style-swatch[data-style="kraft"] .sw-fill{ background:linear-gradient(135deg,#C7A967,#46586B); }
+  .style-swatch[data-style="concrete"] .sw-fill{ background:linear-gradient(135deg,#DAD7CD,#2C5FCC); }
+
+  /* ---- section watermark numerals ---- */
+  .section-wrap{ position:relative; }
+  .section-wrap::before{
+    content:attr(data-num);
+    position:absolute; top:-14px; right:4px; z-index:0;
+    font-family:var(--font-display); font-size:76px; font-weight:800;
+    color:var(--accent-3); opacity:0.08; line-height:1; letter-spacing:-0.02em;
+    pointer-events:none; user-select:none;
+  }
+  .section-wrap > *{ position:relative; z-index:1; }
+
+  /* ---- footer title block ---- */
+  .sheet-footer{
+    margin-top:36px; padding-top:14px; border-top:2px solid var(--line-strong);
+    display:flex; flex-wrap:wrap; gap:0; font-family:var(--font-display);
+  }
+  .sheet-footer .cell{
+    padding:8px 18px 8px 0; margin-right:18px; border-right:1px solid var(--line-strong);
+  }
+  .sheet-footer .cell:last-child{ border-right:none; }
+  .sheet-footer .cell-label{
+    display:block; font-size:9.5px; letter-spacing:0.12em; color:var(--ink-faint); margin-bottom:2px;
+  }
+  .sheet-footer .cell-value{
+    font-size:13px; letter-spacing:0.03em; color:var(--ink); font-weight:700;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="style-switch" id="styleSwitch" role="group" aria-label="배경 스타일 선택">
+    <button type="button" class="style-swatch" data-style="blueprint" title="블루프린트" aria-label="블루프린트 스타일"><span class="sw-fill"></span></button>
+    <button type="button" class="style-swatch" data-style="kraft" title="크래프트 콘셉트 보드" aria-label="크래프트 콘셉트 보드 스타일"><span class="sw-fill"></span></button>
+    <button type="button" class="style-swatch" data-style="concrete" title="노출콘크리트 입면" aria-label="노출콘크리트 입면 스타일"><span class="sw-fill"></span></button>
+  </div>
+  <header class="hero">
+    <svg class="hero-sketch" viewBox="0 0 220 200" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M110 34 L170 68 L110 102 L50 68 Z" />
+      <path d="M170 68 L170 138 L110 172 L110 102 Z" />
+      <path d="M50 68 L50 138 L110 172 L110 102 Z" />
+      <line x1="110" y1="34" x2="110" y2="102" stroke-dasharray="2 4" opacity="0.5" />
+      <rect x="130" y="90" width="18" height="24" />
+      <rect x="68" y="120" width="16" height="34" />
+      <line x1="50" y1="150" x2="110" y2="184" stroke-dasharray="1 5" opacity="0.6"/>
+      <line x1="110" y1="184" x2="170" y2="150" stroke-dasharray="1 5" opacity="0.6"/>
+      <line x1="50" y1="146" x2="50" y2="156" />
+      <line x1="170" y1="146" x2="170" y2="156" />
+      <line x1="110" y1="180" x2="110" y2="188" />
+      <circle cx="195" cy="30" r="16" opacity="0.7" />
+      <line x1="195" y1="18" x2="195" y2="42" opacity="0.7" />
+      <path d="M195 18 L191 26 L199 26 Z" fill="currentColor" stroke="none" opacity="0.7" />
+    </svg>
+    <div class="hero-text">
+      <span class="eyebrow">Image-Gen Prompt Sheet · Midjourney · ChatGPT · Gemini</span>
+      <h1>WiTH Architecture Prompt Builder</h1>
+      <p class="lede">용도·재료·층수·건축 이즘을 클릭해서 고르면 이미지 생성용 프롬프트가 자동으로 완성됩니다. 완성된 문장은 그대로 복사해서 붙여넣으세요.</p>
+    </div>
+  </header>
+
+  <div class="layout">
+    <div class="panel">
+      <div class="section-wrap" data-num="00" id="siteRefSection">
+        <div class="section-head site-ref-head" id="siteRefToggle" role="button" tabindex="0" aria-expanded="true">
+          <span class="sheet-code">A-00</span>
+          <span class="section-title">현장 참고자료</span>
+          <span class="section-sub">SITE REFERENCE · 선택사항, 건너뛰어도 됩니다</span>
+          <span class="site-ref-chevron" id="siteRefChevron">▾</span>
+        </div>
+        <div class="site-ref-body" id="siteRefBody">
+          <div class="hint" style="margin:0 0 14px;">이미지는 이 브라우저 화면에서 미리보기로만 쓰이고 저장·전송되지 않아요. 내용을 메모에 적으면 문장에 반영되고, 실제 이미지 파일은 결과 하단 안내에 따라 각 AI 채팅창(또는 미드저니 창)에 직접 첨부해주세요.</div>
+
+          <div class="upload-group">
+            <div class="upload-group-title">지적도 (대지 형태 · 방위)</div>
+            <div class="upload-group-desc">토지 모양, 도로 접면 방향, 대략적인 가로·세로 길이 등을 메모해두면 대지에 맞는 배치로 반영됩니다.</div>
+            <div class="upload-dropzone" id="cadastralDropzone">
+              <div class="upload-btn-row">
+                <label class="upload-btn" for="cadastralFile">파일 선택</label>
+                <input type="file" id="cadastralFile" accept="image/*" style="display:none;" />
+                <span class="upload-count" id="cadastralCount"></span>
+              </div>
+              <div class="upload-drop-hint">또는 이미지를 여기로 끌어다 놓으세요</div>
+              <div class="thumb-row" id="cadastralThumbs"></div>
+            </div>
+            <textarea class="extra upload-notes" id="cadastralNotes" placeholder="예: 남측 6m 도로에 접한 사다리꼴 대지, 장변 22m x 단변 15m, 북동측 모서리가 예각으로 좁아짐"></textarea>
+          </div>
+
+          <div class="upload-group">
+            <div class="upload-group-title">현장사진 (여러 장 가능)</div>
+            <div class="upload-group-desc">주변 건물, 도로, 수목, 경사 등 실제 대지 조건을 메모해두면 주변 맥락으로 반영됩니다.</div>
+            <div class="upload-dropzone" id="sitePhotoDropzone">
+              <div class="upload-btn-row">
+                <label class="upload-btn" for="sitePhotoFile">파일 선택</label>
+                <input type="file" id="sitePhotoFile" accept="image/*" multiple style="display:none;" />
+                <span class="upload-count" id="sitePhotoCount"></span>
+              </div>
+              <div class="upload-drop-hint">또는 이미지를 여기로 끌어다 놓으세요</div>
+              <div class="thumb-row" id="sitePhotoThumbs"></div>
+            </div>
+            <textarea class="extra upload-notes" id="sitePhotoNotes" placeholder="예: 남측은 저층 주택가, 서측 도로변에 가로수 열식, 대지는 남향으로 완만하게 경사"></textarea>
+          </div>
+
+          <div class="upload-group">
+            <div class="upload-group-title">스케치업 매싱 이미지 (백색 모델)</div>
+            <div class="upload-group-desc">매스 개수, 층 구성, 지붕 형태 등을 메모해두면 그 형태를 따르는 렌더 프롬프트로 반영됩니다.</div>
+            <div class="upload-dropzone" id="sketchupDropzone">
+              <div class="upload-btn-row">
+                <label class="upload-btn" for="sketchupFile">파일 선택</label>
+                <input type="file" id="sketchupFile" accept="image/*" multiple style="display:none;" />
+                <span class="upload-count" id="sketchupCount"></span>
+              </div>
+              <div class="upload-drop-hint">또는 이미지를 여기로 끌어다 놓으세요</div>
+              <div class="thumb-row" id="sketchupThumbs"></div>
+            </div>
+            <textarea class="extra upload-notes" id="sketchupNotes" placeholder="예: 어긋나게 겹친 2개 매스, 3층 규모, 2층 일부가 도로 쪽으로 캔틸레버 돌출, 평지붕"></textarea>
+          </div>
+
+          <div class="upload-group">
+            <div class="upload-group-title">사물 이미지 → 건축 변환</div>
+            <div class="upload-group-desc">책 더미, 도자기, 과일 같은 사물 사진을 올리면 그 사물을 건축물로 재해석합니다. 아래에서 건축 유형·면적·층수·건축가 등을 고르면 그 조건에 맞는 건물로 바뀌어요.</div>
+            <div class="upload-dropzone" id="objectDropzone">
+              <div class="upload-btn-row">
+                <label class="upload-btn" for="objectFile">파일 선택</label>
+                <input type="file" id="objectFile" accept="image/*" multiple style="display:none;" />
+                <span class="upload-count" id="objectCount"></span>
+              </div>
+              <div class="upload-drop-hint">또는 이미지를 여기로 끌어다 놓으세요</div>
+              <div class="thumb-row" id="objectThumbs"></div>
+            </div>
+            <div class="upload-group-desc" style="margin:10px 0 6px;">사물의 무엇을 건축으로 옮길까요? (복수 선택)</div>
+            <div class="chip-grid" id="objectModeChips"></div>
+            <textarea class="extra upload-notes" id="objectNotes" placeholder="예: 쌓아 놓은 책 5권. 위아래로 어긋나게 포개져 있고, 책 단면의 얇은 결이 보임"></textarea>
+            <div class="hint">사물 설명은 짧을수록 좋아요. 입력한 글은 그대로 프롬프트에 들어가므로, 미드저니는 영어(예: a stack of five books)로 쓰면 더 정확해요.</div>
+          </div>
+
+          <div class="hint upload-summary" id="uploadSummaryHint"></div>
+        </div>
+      </div>
+
+      <div class="sections" id="sections"></div>
+    </div>
+
+    <div class="output-rail">
+      <button class="preset-btn" id="presetBtn" type="button">
+        <span class="preset-btn-title">현상설계용 이미지</span>
+        <span class="preset-btn-sub">따뜻한 노을빛 · 사실적 인물 스케일 · 현상설계 보드급 완성도로 분위기 설정</span>
+      </button>
+
+      <label class="mode-switch">
+        <input type="checkbox" id="competitionToggle" />
+        <span>공모전 모드 — 컨셉 키워드 &amp; 공모전 표현 방식 추가</span>
+      </label>
+
+      <div class="titleblock" id="conceptBlock" style="display:none;">
+        <label class="field-label">컨셉 키워드 (한 줄로 핵심 아이디어)</label>
+        <input type="text" class="textfield" id="conceptInput" style="width:100%;" placeholder="예: 빛과 그림자의 켜, 골목과 마당의 관계" />
+      </div>
+
+      <div class="platform-toggle" id="platformToggle">
+        <button data-platform="mj" class="active">Midjourney</button>
+        <button data-platform="chatgpt">ChatGPT</button>
+        <button data-platform="gemini">Gemini</button>
+      </div>
+
+      <div class="titleblock" id="aspectBlock">
+        <label class="field-label">화면 비율 · 사이즈 (모든 탭 공통)</label>
+        <div class="chip-grid" id="aspectChips"></div>
+        <div class="hint" id="aspectHint"></div>
+      </div>
+
+      <div class="titleblock" id="mjOptions">
+        <div class="row" style="justify-content:space-between;">
+          <div>
+            <label class="field-label">버전 Version</label>
+            <select id="versionSelect">
+              <option value="6">--v 6</option>
+              <option value="6.1">--v 6.1</option>
+              <option value="5.2">--v 5.2</option>
+            </select>
+          </div>
+        </div>
+        <div class="chaos-row">
+          <label class="field-label">카오스 Chaos — 결과물의 다양성/변화 정도</label>
+          <div class="row" style="align-items:center; flex-wrap:nowrap;">
+            <input type="range" id="chaosSlider" min="0" max="100" step="1" value="0" />
+            <span class="chaos-value" id="chaosValue">0</span>
+          </div>
+          <div class="hint">0 = 가장 예측 가능 · 100 = 가장 실험적/다양한 변주</div>
+        </div>
+      </div>
+
+      <div class="titleblock">
+        <label class="field-label">레퍼런스 이미지 URL (선택)</label>
+        <input type="text" class="textfield" id="refImageInput" style="width:100%;" placeholder="https://... 이미지 링크" />
+        <div class="hint" id="refImageHint"></div>
+      </div>
+
+      <div class="titleblock">
+        <label class="field-label">추가 디테일 (선택)</label>
+        <textarea class="extra" id="extraInput" placeholder="예: 비 오는 거리, 사람 실루엣 추가, 특정 색감 등"></textarea>
+      </div>
+
+      <div class="titleblock">
+        <div class="titleblock-label">SHT · OUTPUT — 완성된 프롬프트</div>
+        <div class="prompt-out" id="promptOut"></div>
+        <button class="copy-btn" id="copyBtn" type="button" style="margin-top:12px;">영어 프롬프트 복사</button>
+      </div>
+
+      <div class="titleblock">
+        <div class="titleblock-label">한글 번역 (참고용 · 실제 생성에는 위 영어 프롬프트를 사용하세요)</div>
+        <div class="prompt-out" id="promptOutKo"></div>
+        <button class="copy-btn" id="copyKoBtn" type="button" style="margin-top:12px;">한글 번역 복사</button>
+      </div>
+
+      <button class="reset-btn" id="resetBtn" type="button">모든 선택 초기화</button>
+    </div>
+  </div>
+
+  <div class="sheet-footer">
+    <div class="cell"><span class="cell-label">DRAFTED FOR</span><span class="cell-value">MIDJOURNEY · CHATGPT · GEMINI</span></div>
+    <div class="cell"><span class="cell-label">SCALE</span><span class="cell-value">N.T.S.</span></div>
+    <div class="cell"><span class="cell-label">SHEET</span><span class="cell-value">A-01 / A-15</span></div>
+    <div class="cell"><span class="cell-label">REV.</span><span class="cell-value">07</span></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var STYLE_KEY = 'archPromptStyle';
+  var styleSwatches = document.querySelectorAll('.style-swatch');
+  function applyStyle(styleName){
+    document.documentElement.setAttribute('data-style', styleName);
+    styleSwatches.forEach(function(btn){
+      btn.setAttribute('aria-pressed', btn.getAttribute('data-style') === styleName ? 'true' : 'false');
+    });
+    try{ localStorage.setItem(STYLE_KEY, styleName); }catch(e){}
+  }
+  styleSwatches.forEach(function(btn){
+    btn.addEventListener('click', function(){ applyStyle(btn.getAttribute('data-style')); });
+  });
+  var savedStyle = 'concrete';
+  try{ savedStyle = localStorage.getItem(STYLE_KEY) || 'concrete'; }catch(e){}
+  applyStyle(savedStyle);
+
+  var CATS = [
+    {
+      key:'type', sheet:'A-01', title:'건축 유형', sub:'PROGRAM', multi:false,
+      options:[
+        {ko:'단독주택', en:'single-family house'},
+        {ko:'다가구주택', en:'multi-household house'},
+        {ko:'다세대주택', en:'multi-unit house'},
+        {ko:'카페+주택', en:'café with attached residence'},
+        {ko:'아파트/공동주택', en:'apartment complex'},
+        {ko:'타운하우스', en:'townhouse'},
+        {ko:'오피스', en:'office building'},
+        {ko:'카페', en:'café'},
+        {ko:'리테일', en:'retail store'},
+        {ko:'미술관/갤러리', en:'art gallery'},
+        {ko:'도서관', en:'library'},
+        {ko:'학교', en:'school building'},
+        {ko:'종교시설', en:'chapel'},
+        {ko:'호텔/리조트', en:'hotel resort'},
+        {ko:'병원', en:'hospital'},
+        {ko:'공장/산업시설', en:'industrial factory'},
+        {ko:'공연장/문화센터', en:'performance hall'},
+        {ko:'파빌리온', en:'pavilion'},
+        {ko:'커뮤니티센터', en:'community center'},
+        {ko:'학교체육관(다목적체육관)', en:'school gymnasium (multi-purpose sports hall)'},
+        {ko:'생활체육관', en:'public sports center'},
+        {ko:'마을 커뮤니티 시설(주민센터)', en:'residents\' community hall'},
+        {ko:'소방서', en:'fire station'}
+      ]
+    },
+    {
+      key:'style', sheet:'A-02', title:'건축 이즘 / 스타일', sub:'STYLE', multi:false,
+      options:[
+        {ko:'미니멀리즘', en:'minimalist'},
+        {ko:'브루탈리즘', en:'brutalist'},
+        {ko:'모더니즘', en:'modernist'},
+        {ko:'포스트모더니즘', en:'postmodernist'},
+        {ko:'파라메트릭', en:'parametric'},
+        {ko:'디컨스트럭티비즘', en:'deconstructivist'},
+        {ko:'하이테크', en:'high-tech'},
+        {ko:'바이오필릭', en:'biophilic'},
+        {ko:'토속적/리저널리즘', en:'vernacular regionalist'},
+        {ko:'스칸디나비아 모던', en:'Scandinavian modern'},
+        {ko:'일본 전통', en:'Japanese traditional'},
+        {ko:'아르누보', en:'Art Nouveau'},
+        {ko:'인더스트리얼', en:'industrial-style'},
+        {ko:'젠 미니멀', en:'Zen minimalist'}
+      ]
+    },
+    {
+      key:'materials', sheet:'A-03', title:'주요 재료', sub:'MATERIALS · 복수 선택', multi:true,
+      options:[
+        {ko:'노출콘크리트', en:'exposed concrete'},
+        {ko:'유리 커튼월', en:'glass curtain wall'},
+        {ko:'목재 클래딩', en:'timber cladding'},
+        {ko:'코르텐강', en:'corten steel'},
+        {ko:'벽돌', en:'brick'},
+        {ko:'알루미늄 패널', en:'aluminum panel'},
+        {ko:'천연석재', en:'natural stone'},
+        {ko:'스틸 구조', en:'exposed steel structure'},
+        {ko:'테라코타', en:'terracotta'},
+        {ko:'스투코 미장', en:'stucco render'},
+        {ko:'폴리카보네이트', en:'polycarbonate panel'},
+        {ko:'CLT/집성목', en:'mass timber CLT'}
+      ]
+    },
+    {
+      key:'floors', sheet:'A-04', title:'층수 / 규모', sub:'SCALE', multi:false,
+      options:[
+        {ko:'단층', en:'single-story'},
+        {ko:'2층', en:'two-story'},
+        {ko:'저층 (3~5층)', en:'low-rise'},
+        {ko:'중층 (6~15층)', en:'mid-rise'},
+        {ko:'고층 (16층 이상)', en:'high-rise'},
+        {ko:'초고층', en:'super-tall'}
+      ]
+    },
+    {
+      key:'area', sheet:'A-05', title:'연면적', sub:'FLOOR AREA', multi:false,
+      options:[
+        {ko:'100㎡', en:'100 m²'},
+        {ko:'150㎡', en:'150 m²'},
+        {ko:'200㎡', en:'200 m²'},
+        {ko:'500㎡', en:'500 m²'},
+        {ko:'1,000㎡', en:'1,000 m²'},
+        {ko:'1,500㎡', en:'1,500 m²'},
+        {ko:'2,000㎡', en:'2,000 m²'},
+        {ko:'3,000㎡', en:'3,000 m²'},
+        {ko:'5,000㎡', en:'5,000 m²'},
+        {ko:'10,000㎡', en:'10,000 m²'}
+      ]
+    },
+    {
+      key:'context', sheet:'A-06', title:'대지 / 맥락', sub:'SITE CONTEXT', multi:false,
+      options:[
+        {ko:'도심', en:'dense urban context'},
+        {ko:'교외', en:'quiet suburban neighborhood'},
+        {ko:'해안가', en:'coastal site'},
+        {ko:'산/숲', en:'mountain forest'},
+        {ko:'사막', en:'desert landscape'},
+        {ko:'도심 옥상', en:'urban rooftop'},
+        {ko:'강변', en:'riverside'}
+      ]
+    },
+    {
+      key:'camera', sheet:'A-07', title:'시점 / 구도', sub:'CAMERA', multi:false,
+      options:[
+        {ko:'조감도', en:'aerial bird\'s-eye view'},
+        {ko:'정면 파사드', en:'front facade view'},
+        {ko:'3/4 각도', en:'three-quarter angle view'},
+        {ko:'로우앵글', en:'low-angle view'},
+        {ko:'투시도', en:'architectural perspective view'},
+        {ko:'사람 높이 투시도', en:'eye-level human-height perspective view'},
+        {ko:'인테리어', en:'interior view'},
+        {ko:'단면도 스타일', en:'architectural section view'},
+        {ko:'야간 원경', en:'night exterior view'}
+      ]
+    },
+    {
+      key:'lighting', sheet:'A-08', title:'조명 / 시간대', sub:'LIGHTING', multi:false,
+      options:[
+        {ko:'골든아워', en:'golden hour lighting'},
+        {ko:'한낮', en:'bright midday sunlight'},
+        {ko:'야간 조명', en:'night lighting'},
+        {ko:'흐린 날', en:'overcast diffused light'},
+        {ko:'새벽', en:'soft dawn light'},
+        {ko:'노을', en:'sunset glow'}
+      ]
+    },
+    {
+      key:'render', sheet:'A-09', title:'렌더 스타일', sub:'RENDER', multi:false,
+      options:[
+        {ko:'포토리얼', en:'photorealistic rendering'},
+        {ko:'극 사실 포토이미지', en:'ultra-realistic professional architectural photograph, a real photo and not a 3D render, shot on a full-frame mirrorless camera with a professional architectural lens, sharp across the frame, corrected vertical lines, natural color grading, physically accurate shadows and glass reflections of the real surroundings, true-to-life material textures with visible panel joints, formwork marks, mortar lines and subtle weathering, lived-in context with everyday life details such as people in casual clothing, parked cars, street signage, utility poles, potted plants and outdoor furniture, slight natural imperfections, no CGI gloss, no plastic look'},
+        {ko:'건축 다이어그램', en:'architectural diagram style'},
+        {ko:'수채화 렌더', en:'watercolor architectural rendering'},
+        {ko:'개념 스케치', en:'conceptual sketch style'},
+        {ko:'모형 사진', en:'physical model photography style'},
+        {ko:'흑백 라인아트', en:'black-and-white line art'}
+      ]
+    },
+    {
+      key:'detail', sheet:'A-10', title:'사진/렌더 디테일', sub:'QUALITY · 복수 선택', multi:true,
+      options:[
+        {ko:'수상작 건축사진 스타일', en:'award-winning architectural photography'},
+        {ko:'35mm 필름, 얕은 심도', en:'shot on 35mm film, shallow depth of field'},
+        {ko:'초고해상도 디테일', en:'ultra-detailed, 8K resolution'},
+        {ko:'자연스러운 그림자와 질감', en:'soft natural shadows, realistic material texture'},
+        {ko:'틸트시프트 로우앵글 렌즈', en:'tilt-shift low-angle lens perspective'},
+        {ko:'필름 그레인 무드', en:'subtle film grain, cinematic color grading'}
+      ]
+    },
+    {
+      key:'architectModern', sheet:'A-11', title:'근대 해외 건축가', sub:'MODERN MASTERS', multi:false,
+      options:[
+        {ko:'르 코르뷔지에', en:'Le Corbusier', nat:'스위스·프랑스'},
+        {ko:'미스 반 데어 로에', en:'Ludwig Mies van der Rohe', nat:'독일·미국'},
+        {ko:'프랭크 로이드 라이트', en:'Frank Lloyd Wright', nat:'미국'},
+        {ko:'발터 그로피우스', en:'Walter Gropius', nat:'독일·미국'},
+        {ko:'알바 알토', en:'Alvar Aalto', nat:'핀란드'},
+        {ko:'루이스 칸', en:'Louis Kahn', nat:'미국'},
+        {ko:'오스카 니마이어', en:'Oscar Niemeyer', nat:'브라질'},
+        {ko:'에로 사리넨', en:'Eero Saarinen', nat:'핀란드·미국'},
+        {ko:'리처드 노이트라', en:'Richard Neutra', nat:'오스트리아·미국'},
+        {ko:'마르셀 브로이어', en:'Marcel Breuer', nat:'헝가리·미국'}
+      ]
+    },
+    {
+      key:'architectContemporary', sheet:'A-12', title:'현대 해외 건축가', sub:'CONTEMPORARY GLOBAL', multi:false,
+      options:[
+        {ko:'안도 다다오', en:'Tadao Ando', nat:'일본'},
+        {ko:'자하 하디드', en:'Zaha Hadid', nat:'이라크·영국'},
+        {ko:'렌조 피아노', en:'Renzo Piano', nat:'이탈리아'},
+        {ko:'노먼 포스터', en:'Norman Foster', nat:'영국'},
+        {ko:'렘 콜하스', en:'Rem Koolhaas', nat:'네덜란드'},
+        {ko:'프랭크 게리', en:'Frank Gehry', nat:'캐나다·미국'},
+        {ko:'페터 춤토르', en:'Peter Zumthor', nat:'스위스'},
+        {ko:'쿠마 켄고', en:'Kengo Kuma', nat:'일본'},
+        {ko:'헤르초크 & 드 뫼롱', en:'Herzog & de Meuron', nat:'스위스'},
+        {ko:'비야케 잉겔스', en:'Bjarke Ingels', nat:'덴마크'},
+        {ko:'리카르도 레고레타', en:'Ricardo Legorreta', nat:'멕시코'}
+      ]
+    },
+    {
+      key:'architectKorea', sheet:'A-13', title:'현대 한국 건축가', sub:'CONTEMPORARY KOREA', multi:false,
+      options:[
+        {ko:'김형섭', en:'Kim Hyung-sub\'s functionalist, form-follows-function architecture, staggered white stucco cubic massing paired with textured grey stone cladding, honestly exposed raw concrete structure favored over decorative cladding, dramatic cantilevered volumes appearing to float and often carried on a single round column, board-formed exposed concrete base grounding the building on volcanic Jeju terrain, open glazed public facades contrasted with solid closed service facades, asymmetric punched windows, black steel roof-deck railings, dry-stacked basalt stone walls, warm timber accents against raw concrete interiors, restrained material honesty free of superficial historicist ornament'},
+        {ko:'승효상', en:'Seung H-Sang'},
+        {ko:'조민석', en:'Minsuk Cho'},
+        {ko:'유현준', en:'Yoo Hyun-joon'},
+        {ko:'김찬중', en:'Kim Chan-joong'},
+        {ko:'최문규', en:'Choi Moongyu'},
+        {ko:'김인철', en:'Kim In-cheul'},
+        {ko:'우규승', en:'Kyu Sung Woo'},
+        {ko:'황두진', en:'Hwang Doo-jin'},
+        {ko:'조병수', en:'Byoung-soo Cho'},
+        {ko:'민현식', en:'Min Hyun-sik'}
+      ]
+    }
+  ];
+
+  var COMPETITION_CAT = {
+    key:'compStyle', sheet:'A-14', title:'공모전 표현 방식', sub:'COMPETITION PRESENTATION', multi:false,
+    options:[
+      {ko:'학교·공공시설 조감 마스터플랜', en:'SketchUp and V-Ray style aerial masterplan rendering, soft diffused daylight, muted natural material palette, ghost-silhouette entourage figures, full surrounding site context'},
+      {ko:'현상설계 실사 조감도', en:'professional architectural visualization rendering, warm dusk atmosphere with soft glowing interior light, realistic human-scale pedestrian figures, competition presentation board quality'},
+      {ko:'액소노메트릭 다이어그램', en:'axonometric architectural diagram'},
+      {ko:'매싱 스터디', en:'massing study model'},
+      {ko:'콘셉트 콜라주', en:'concept collage'},
+      {ko:'배치 다이어그램 조감', en:'aerial site diagram'},
+      {ko:'목업 모형사진', en:'physical study model photography'},
+      {ko:'익스플로디드 액소노메트릭', en:'exploded axonometric diagram'}
+    ]
+  };
+
+  var COMPETITION_SITE_CAT = {
+    key:'siteElements', sheet:'A-15', title:'대지 요소', sub:'SITE PROGRAM · 복수 선택', multi:true,
+    options:[
+      {ko:'운동장/트랙', en:'sports field and running track'},
+      {ko:'태양광 패널', en:'rooftop solar panels'},
+      {ko:'보행광장/특수포장', en:'pedestrian plaza with patterned paving'},
+      {ko:'주차장·전기차', en:'parking area with electric vehicles'},
+      {ko:'옥상정원', en:'rooftop garden'},
+      {ko:'파사드 사이니지', en:'building name signage on facade'},
+      {ko:'놀이시설/텃밭', en:'playground and community garden'},
+      {ko:'보행 브릿지/데크', en:'elevated pedestrian bridge deck'},
+      {ko:'조경형 계단 광장', en:'landscaped stepped plaza with terraced greenery'},
+      {ko:'버스정류장/스트리트퍼니처', en:'bus stop and street furniture'}
+    ]
+  };
+
+  var DEFAULTS = {
+    type:['단독주택'], style:['미니멀리즘'], materials:['노출콘크리트','목재 클래딩'],
+    floors:['2층'], context:['도심'], camera:['정면 파사드'], lighting:['골든아워'], render:['포토리얼'],
+    detail:['수상작 건축사진 스타일']
+  };
+
+  var state = {};
+  CATS.forEach(function(c){ state[c.key] = DEFAULTS[c.key] ? DEFAULTS[c.key].slice() : []; });
+  state.compStyle = [];
+  state.siteElements = [];
+  state.platform = 'mj';
+  state.aspect = '16:9';
+  state.version = '6';
+  state.chaos = 0;
+  state.extra = '';
+  state.competitionMode = false;
+  state.conceptKeyword = '';
+  state.refImageUrl = '';
+  state.cadastralNotes = '';
+  state.sitePhotoNotes = '';
+  state.sketchupNotes = '';
+  state.objectNotes = '';
+  state.objectModes = ['form', 'surface'];
+
+  var uploads = { cadastral: [], sitePhoto: [], sketchup: [], object: [] };
+
+  try{
+    var saved = localStorage.getItem('archPromptBuilder');
+    if(saved){ var parsed = JSON.parse(saved); Object.assign(state, parsed); }
+  }catch(e){}
+
+  function persist(){
+    try{ localStorage.setItem('archPromptBuilder', JSON.stringify(state)); }catch(e){}
+  }
+
+  function activeCats(){
+    return state.competitionMode ? CATS.concat([COMPETITION_CAT, COMPETITION_SITE_CAT]) : CATS;
+  }
+
+  function findOpt(catKey, ko){
+    var cat = activeCats().filter(function(c){ return c.key === catKey; })[0];
+    if(!cat) return null;
+    return cat.options.filter(function(o){ return o.ko === ko; })[0];
+  }
+
+  var sectionsEl = document.getElementById('sections');
+
+  function renderSections(){
+    sectionsEl.innerHTML = '';
+    activeCats().forEach(function(cat){
+      var section = document.createElement('div');
+      section.className = 'section-wrap';
+      section.setAttribute('data-num', cat.sheet.split('-')[1] || '');
+
+      var head = document.createElement('div');
+      head.className = 'section-head';
+      head.innerHTML =
+        '<span class="sheet-code">' + cat.sheet + '</span>' +
+        '<span class="section-title">' + cat.title + '</span>' +
+        '<span class="section-sub">' + cat.sub + '</span>';
+      section.appendChild(head);
+
+      var grid = document.createElement('div');
+      grid.className = 'chip-grid';
+      cat.options.forEach(function(opt){
+        var chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'chip';
+        var isSel = state[cat.key].indexOf(opt.ko) !== -1;
+        if(isSel) chip.classList.add('selected');
+        chip.setAttribute('aria-pressed', isSel ? 'true' : 'false');
+        chip.innerHTML = '<span class="ko">' + opt.ko + (opt.nat ? ' <span class="nat">(' + opt.nat + ')</span>' : '') + '</span><span class="en">' + opt.en + '</span>';
+        chip.addEventListener('click', function(){
+          if(cat.multi){
+            var idx = state[cat.key].indexOf(opt.ko);
+            if(idx === -1) state[cat.key].push(opt.ko);
+            else state[cat.key].splice(idx, 1);
+          } else {
+            var alreadySelected = state[cat.key].length === 1 && state[cat.key][0] === opt.ko;
+            state[cat.key] = alreadySelected ? [] : [opt.ko];
+          }
+          persist();
+          renderSections();
+          renderOutput();
+        });
+        grid.appendChild(chip);
+      });
+      section.appendChild(grid);
+
+      if(cat.key === 'materials'){
+        var count = state.materials.length;
+        var hint = document.createElement('div');
+        hint.className = 'hint';
+        hint.textContent = '선택 ' + count + '개 · 권장 1~2개 (너무 많으면 결과가 산만해져요)';
+        hint.style.color = count > 2 ? 'var(--accent-2)' : 'var(--ink-faint)';
+        section.appendChild(hint);
+      }
+
+      sectionsEl.appendChild(section);
+    });
+  }
+
+  function article(word){
+    return /^[aeiou]/i.test(word) ? 'an' : 'a';
+  }
+
+  function selectedEns(catKey){
+    return state[catKey].map(function(ko){ return findOpt(catKey, ko).en; });
+  }
+
+  function selectedArchitects(){
+    return ['architectModern', 'architectContemporary', 'architectKorea'].reduce(function(acc, key){
+      return acc.concat(selectedEns(key));
+    }, []);
+  }
+
+  function isInteriorType(type){
+    return type.indexOf('interior') !== -1;
+  }
+
+  // 잘리지 않은 전체 이미지가 나오도록, 모든 플랫폼·모든 프롬프트에 항상 포함되는 프레이밍 지시문.
+  function fullFrameFragment(interior){
+    return interior
+      ? 'entire room fully visible within frame, walls and ceiling not cropped'
+      : 'entire building fully visible within frame from foundation to roofline, not cropped, wide establishing shot';
+  }
+  function fullFrameSentence(interior){
+    return interior
+      ? 'The entire room is fully visible within the frame, with the walls and ceiling not cropped or cut off at the edges.'
+      : 'The entire building is fully visible within the frame, from foundation to roofline, with nothing cropped or cut off at the edges.';
+  }
+
+  function buildMJ(){
+    var style = selectedEns('style')[0];
+    var floors = selectedEns('floors')[0];
+    var type = selectedEns('type')[0] || 'building';
+    var interior = isInteriorType(type);
+    var materials = selectedEns('materials');
+    var area = selectedEns('area')[0];
+    var context = selectedEns('context')[0];
+    var camera = selectedEns('camera')[0];
+    var lighting = selectedEns('lighting')[0];
+    var render = selectedEns('render')[0];
+    var detail = selectedEns('detail');
+    var architects = selectedArchitects();
+    var compStyle = state.competitionMode ? selectedEns('compStyle')[0] : null;
+    var siteElements = state.competitionMode ? selectedEns('siteElements') : [];
+
+    var subjectCore = [interior ? null : floors, style, type].filter(Boolean).join(' ');
+    var subject = [camera, subjectCore].filter(Boolean).join(' of ');
+    var parts = [];
+    if(state.competitionMode && state.conceptKeyword.trim()) parts.push(state.conceptKeyword.trim() + ' concept');
+    parts.push(subject);
+    parts.push(fullFrameFragment(interior));
+    if(currentAspect().safe) parts.push(SAFE_ZONE_MJ);
+    if(materials.length) parts.push(materials.join(' and ') + (interior ? ' interior finishes' : ' facade'));
+    if(area) parts.push(area + ' floor area');
+    if(state.cadastralNotes.trim()) parts.push('site plan shape: ' + state.cadastralNotes.trim());
+    if(state.sitePhotoNotes.trim()) parts.push('existing site context: ' + state.sitePhotoNotes.trim());
+    if(state.sketchupNotes.trim()) parts.push('matching massing study: ' + state.sketchupNotes.trim());
+    if(objectPhraseMJ()) parts.push(objectPhraseMJ());
+    if(architects.length) parts.push('in the style of ' + architects.join(' and '));
+    if(context) parts.push(context);
+    if(siteElements.length) parts.push('site featuring ' + siteElements.join(', '));
+    if(lighting) parts.push(lighting);
+    if(render) parts.push(render);
+    if(compStyle) parts.push(compStyle);
+    parts.push(detail.length ? detail.join(', ') : 'highly detailed, professional architectural photography');
+    if(state.extra.trim()) parts.push(state.extra.trim());
+
+    var line = parts.filter(Boolean).join(', ');
+    line += ' --ar ' + state.aspect + ' --v ' + state.version;
+    if(isPhotoMode()) line += ' --style raw';
+    if(state.chaos > 0) line += ' --chaos ' + state.chaos;
+    if(state.refImageUrl.trim()) line += ' --sref ' + state.refImageUrl.trim();
+    return line;
+  }
+
+  // A-09에서 "극 사실 포토이미지"를 골랐는지. 골랐을 때는 "렌더링/시각화"라는 말 대신
+  // "실제 사진"이라는 말로 문장을 바꾸고, 미드저니에는 사진용 옵션(--style raw)을 붙인다.
+  var PHOTO_MODE_KO = '극 사실 포토이미지';
+  function isPhotoMode(){
+    return state.render.indexOf(PHOTO_MODE_KO) !== -1;
+  }
+
+  function gatherFields(){
+    var type = selectedEns('type')[0] || 'building';
+    return {
+      style: selectedEns('style')[0],
+      floors: selectedEns('floors')[0],
+      type: type,
+      interior: isInteriorType(type),
+      materials: selectedEns('materials'),
+      area: selectedEns('area')[0],
+      context: selectedEns('context')[0],
+      camera: selectedEns('camera')[0],
+      lighting: selectedEns('lighting')[0],
+      render: selectedEns('render')[0],
+      detail: selectedEns('detail'),
+      architects: selectedArchitects(),
+      compStyle: state.competitionMode ? selectedEns('compStyle')[0] : null,
+      siteElements: state.competitionMode ? selectedEns('siteElements') : [],
+      cadastralNotes: state.cadastralNotes.trim(),
+      sitePhotoNotes: state.sitePhotoNotes.trim(),
+      sketchupNotes: state.sketchupNotes.trim()
+    };
+  }
+
+  // 화면 비율 · 사이즈. px는 칩에 표시하는 권장 출력 크기(참고용)이고, 프롬프트에는 비율만 넣는다.
+  // (미드저니는 --ar 비율만 받고, 챗GPT·제미나이도 픽셀보다 비율을 더 안정적으로 따른다.)
+  var ASPECTS = [
+    {ratio:'16:9', label:'16:9',        px:'1920×1080', en:'wide landscape',                        ko:'가로 와이드'},
+    {ratio:'9:16', label:'9:16 · 쇼츠', px:'1080×1920', en:'tall vertical, Shorts and Reels format', ko:'세로형, 쇼츠·릴스용'},
+    {ratio:'4:3',  label:'4:3',         px:'1600×1200', en:'standard landscape',                    ko:'가로 표준'},
+    {ratio:'3:4',  label:'3:4 · 인스타 그리드', px:'1080×1440', en:'vertical portrait, Instagram grid format', ko:'세로형, 인스타그램 그리드용', safe:true},
+    {ratio:'4:5',  label:'4:5 · 인스타 피드', px:'1080×1350', en:'vertical portrait, Instagram feed format', ko:'세로형, 인스타그램 피드용', safe:true},
+    {ratio:'3:2',  label:'3:2',         px:'1800×1200', en:'classic photo landscape',               ko:'가로 사진 비율'},
+    {ratio:'2:3',  label:'2:3',         px:'1200×1800', en:'classic photo portrait',                ko:'세로 사진 비율'},
+    {ratio:'1:1',  label:'1:1',         px:'1080×1080', en:'square',                                ko:'정사각형'}
+  ];
+
+  function currentAspect(){
+    return ASPECTS.filter(function(a){ return a.ratio === state.aspect; })[0] || ASPECTS[0];
+  }
+
+  // 인스타그램용 비율(3:4, 4:5)은 피드·그리드에서 위아래·좌우가 조금씩 잘릴 수 있어서,
+  // 핵심 피사체와 글자를 가운데에 두고 가장자리에 여백을 두라는 지시를 함께 넣는다.
+  var SAFE_ZONE_EN = 'Keep the main subject and any text well inside the central area of the frame, leaving generous empty margin at the top, bottom and sides so nothing important is lost if the image is cropped.';
+  var SAFE_ZONE_KO = '핵심 피사체와 글자는 화면 가운데 영역 안에 두고, 위·아래·양옆에 넉넉한 여백을 남겨서 이미지가 잘려도 중요한 부분이 사라지지 않게 하세요.';
+  var SAFE_ZONE_MJ = 'main subject centered with generous empty margin on all sides, safe for cropping';
+
+  // 챗GPT·제미나이는 비율 문장을 프롬프트 중간에 두면 무시하고 정사각형으로 만드는 일이 있어서,
+  // 비율 지시를 맨 앞에 "가장 중요한 지시"로 두고, 정사각형이 아님을 분명히 적는다.
+  // (여백·안전영역 문장은 인스타용 비율일 때만 원래 자리에 따로 넣는다.)
+  function aspectLead(){
+    var a = currentAspect();
+    var s = 'Image format (most important): ' + a.ratio + ' aspect ratio, ' + a.en + '.';
+    return a.ratio === '1:1' ? s : s + ' Do NOT output a square image.';
+  }
+
+  function aspectLeadKo(){
+    var a = currentAspect();
+    var s = '화면 비율(가장 중요): ' + a.ratio + '(' + a.ko + ').';
+    return a.ratio === '1:1' ? s : s + ' 정사각형으로 만들지 마세요.';
+  }
+
+  function safeZoneSentence(){
+    return currentAspect().safe ? SAFE_ZONE_EN : null;
+  }
+
+  function safeZoneSentenceKo(){
+    return currentAspect().safe ? SAFE_ZONE_KO : null;
+  }
+
+  // 사물 → 건축 변환. 사물의 무엇을 건축으로 옮길지(복수 선택)를 칩으로 고른다.
+  var OBJECT_MODES = [
+    {key:'form',    ko:'형태·쌓임 → 매스',     hint:'form → massing',
+      en:'derive the building\'s massing from the object\'s silhouette, stacking and proportions',
+      mj:'massing derived from its form and stacking',
+      koSentence:'사물의 실루엣·쌓임·비례에서 건물 매스를 도출'},
+    {key:'surface', ko:'표면 결·겹 → 파사드',  hint:'texture → facade',
+      en:'abstract the object\'s surface texture and layering into facade detailing',
+      mj:'facade detailing abstracted from its surface layering',
+      koSentence:'사물의 표면 결과 겹을 파사드 디테일로 추상화'},
+    {key:'color',   ko:'색 → 재료 팔레트',      hint:'color → materials',
+      en:'draw the material palette from the object\'s colors',
+      mj:'material palette drawn from its colors',
+      koSentence:'사물의 색에서 재료 팔레트를 가져옴'},
+    {key:'rhythm',  ko:'비례·반복 → 개구부 리듬', hint:'rhythm → openings',
+      en:'base the rhythm of openings and structural bays on the object\'s repetition and proportions',
+      mj:'opening rhythm derived from its proportions and repetition',
+      koSentence:'사물의 반복과 비례에서 개구부·구조 리듬을 도출'}
+  ];
+
+  function objectModesSelected(){
+    return OBJECT_MODES.filter(function(m){ return state.objectModes.indexOf(m.key) !== -1; });
+  }
+
+  function objectActive(){
+    return uploads.object.length > 0 || state.objectNotes.trim() !== '';
+  }
+
+  // 챗GPT·제미나이용: "사물 그대로 그리지 말고 건축으로 재해석하라"
+  function objectSentence(){
+    if(!objectActive()) return null;
+    var desc = state.objectNotes.trim();
+    var modes = objectModesSelected();
+    var s = 'Do not depict the attached object' + (desc ? ' (' + desc + ')' : '') + ' itself. Reinterpret it as architecture';
+    s += modes.length ? ': ' + modes.map(function(m){ return m.en; }).join('; ') : '';
+    return s + '. The result must read as a real, buildable building.';
+  }
+
+  function objectSentenceKo(){
+    if(!objectActive()) return null;
+    var desc = state.objectNotes.trim();
+    var modes = objectModesSelected();
+    var s = '첨부한 사물' + (desc ? '(' + desc + ')' : '') + '을 그대로 그리지 말고 건축으로 재해석하세요';
+    s += modes.length ? ': ' + modes.map(function(m){ return m.koSentence; }).join('; ') : '';
+    return s + '. 결과물은 실제로 지을 수 있는 건물로 보여야 합니다.';
+  }
+
+  // 미드저니용: 키워드 한 덩어리
+  function objectPhraseMJ(){
+    if(!objectActive()) return null;
+    var desc = state.objectNotes.trim();
+    var modes = objectModesSelected().map(function(m){ return m.mj; });
+    return 'building reinterpreted from ' + (desc || 'the reference object') + (modes.length ? ' (' + modes.join(', ') + ')' : '');
+  }
+
+  function objectPhraseMJKo(){
+    if(!objectActive()) return null;
+    var desc = state.objectNotes.trim();
+    var modes = objectModesSelected().map(function(m){ return m.koSentence; });
+    return '사물 재해석 건축: ' + (desc || '참고 사물') + (modes.length ? ' (' + modes.join(', ') + ')' : '');
+  }
+
+  // 현장 참고자료로 이미지가 첨부된 경우, "첨부 이미지를 먼저 확인하라"는 지시 문장을 만든다.
+  // 첨부 순서(지적도 → 현장사진 → 스케치업 → 사물)는 화면 안내문과 동일하게 맞춰져 있다.
+  function attachedRefItems(){
+    var items = [];
+    var nCad = uploads.cadastral.length, nPhoto = uploads.sitePhoto.length, nSku = uploads.sketchup.length, nObj = uploads.object.length;
+    if(nCad) items.push({
+      en: 'the site plan (cadastral map)' + (nCad > 1 ? ' (' + nCad + ' images)' : '') + ' — use it for the exact lot shape, boundaries, road frontage and north orientation',
+      ko: '지적도' + (nCad > 1 ? ' ' + nCad + '장' : '') + ' — 대지 형태·경계·도로 접면·방위를 정확히 반영'
+    });
+    if(nPhoto) items.push({
+      en: nPhoto + ' site photo' + (nPhoto > 1 ? 's' : '') + ' — use ' + (nPhoto > 1 ? 'them' : 'it') + ' for the real surroundings: neighboring buildings, roads, trees and terrain',
+      ko: '현장사진 ' + nPhoto + '장 — 주변 건물·도로·수목·지형 등 실제 주변 환경을 반영'
+    });
+    if(nSku) items.push({
+      en: 'the white SketchUp massing model' + (nSku > 1 ? ' (' + nSku + ' views)' : '') + ' — follow its mass composition, proportions and roof forms exactly',
+      ko: '스케치업 백색 모델' + (nSku > 1 ? ' ' + nSku + '장' : '') + ' — 매스 구성·비례·지붕 형태를 그대로 따름'
+    });
+    if(nObj) items.push({
+      en: 'the object photo' + (nObj > 1 ? ' (' + nObj + ' images)' : '') + ' — the source object to be reinterpreted as architecture, not copied literally',
+      ko: '사물 사진' + (nObj > 1 ? ' ' + nObj + '장' : '') + ' — 건축으로 재해석할 원본 사물 (그대로 베끼지 않음)'
+    });
+    return items;
+  }
+
+  function attachedRefSentence(){
+    var items = attachedRefItems();
+    if(!items.length) return null;
+    var list = items.map(function(it, i){ return '(' + (i + 1) + ') ' + it.en; }).join('; ');
+    return 'Reference images are attached, in this order: ' + list + '. Examine these images carefully before generating, and treat them as the primary reference.';
+  }
+
+  function attachedRefSentenceKo(){
+    var items = attachedRefItems();
+    if(!items.length) return null;
+    var list = items.map(function(it, i){ return '(' + (i + 1) + ') ' + it.ko; }).join('; ');
+    return '참고 이미지가 다음 순서로 첨부되어 있습니다: ' + list + '. 생성하기 전에 이 이미지들을 꼼꼼히 확인하고, 가장 우선하는 기준으로 삼으세요.';
+  }
+
+  // Imagen(Gemini)은 프롬프트를 그대로 따르는 편이라, 피사체 > 배경/맥락 > 구도 > 조명 > 스타일 순서로
+  // 모든 항목을 빠짐없이 풀어 쓰는 것이 정확도가 높다 (Google Imagen 프롬프트 가이드 권장 구조).
+  function buildGemini(){
+    var f = gatherFields();
+    var mainPhrase = [f.interior ? null : f.floors, f.style, f.type].filter(Boolean).join(' ');
+    var lead = article(mainPhrase) + ' ' + mainPhrase;
+    var geminiNoun = isPhotoMode() ? 'an ultra-realistic architectural photograph (not a 3D render)' : 'a photorealistic architectural visualization';
+    var opener = state.competitionMode && state.conceptKeyword.trim()
+      ? 'Guided by the concept of "' + state.conceptKeyword.trim() + '," this is ' + geminiNoun + ' of '
+      : geminiNoun.charAt(0).toUpperCase() + geminiNoun.slice(1) + ' of ';
+    var s1 = opener + lead;
+    if(f.materials.length) s1 += ' with ' + article(f.materials[0]) + ' ' + f.materials.join(' and ') + (f.interior ? ' interior finish' : ' facade');
+    if(f.area) s1 += ', with a floor area of ' + f.area;
+    if(f.context) s1 += ', set in ' + article(f.context) + ' ' + f.context;
+    s1 += '.';
+
+    var sentences = [s1, fullFrameSentence(f.interior)];
+    var objSentence = objectSentence();
+    if(objSentence) sentences.unshift(objSentence);
+    var refSentence = attachedRefSentence();
+    if(refSentence) sentences.unshift(refSentence);
+    sentences.unshift(aspectLead());
+    if(f.cadastralNotes){
+      sentences.push('Fit the building footprint to the site plan (지적도) described as: ' + f.cadastralNotes + '.');
+    }
+    if(f.sitePhotoNotes){
+      sentences.push('Reflect the real site conditions captured in the attached site photos: ' + f.sitePhotoNotes + '.');
+    }
+    if(f.sketchupNotes){
+      sentences.push('Match the massing and proportions of the attached SketchUp white model: ' + f.sketchupNotes + '.');
+    }
+    if(f.camera || f.lighting){
+      var s2parts = [];
+      if(f.camera) s2parts.push('captured from ' + article(f.camera) + ' ' + f.camera);
+      if(f.lighting) s2parts.push('during ' + f.lighting);
+      sentences.push('The scene is ' + s2parts.join(', ') + '.');
+    }
+    var safeZone = safeZoneSentence();
+    if(safeZone) sentences.push(safeZone);
+    if(f.architects.length){
+      sentences.push('The design draws inspiration from ' + f.architects.join(' and ') + '.');
+    }
+    if(f.siteElements.length){
+      sentences.push('The site includes ' + f.siteElements.join(', ') + '.');
+    }
+    var detailText = f.detail.length ? f.detail.join(', ') : null;
+    if(f.render || detailText){
+      var renderClause = [f.render, detailText].filter(Boolean).join(', ');
+      sentences.push((isPhotoMode() ? 'Photographic style: ' : 'Rendering style: ') + renderClause + '.');
+    }
+    if(f.compStyle){
+      sentences.push('Presented as ' + article(f.compStyle) + ' ' + f.compStyle + '.');
+    }
+    if(state.extra.trim()){
+      sentences.push(state.extra.trim());
+    }
+    return sentences.join(' ');
+  }
+
+  // ChatGPT(DALL-E)는 프롬프트를 내부적으로 재작성하는 경향이 있어서, 콤마 나열보다
+  // 짧고 명령형인 문장 2~3개로 핵심만 진하게 전달하는 편이 원래 의도를 더 잘 지킨다.
+  function buildChatGPT(){
+    var f = gatherFields();
+    var mainPhrase = [f.interior ? null : f.floors, f.style, f.type].filter(Boolean).join(' ');
+    var lead = article(mainPhrase) + ' ' + mainPhrase;
+
+    var featureBits = [];
+    if(f.materials.length) featureBits.push(f.materials.join(' and ') + (f.interior ? ' interior finishes' : ' facade'));
+    if(f.area) featureBits.push('a floor area of ' + f.area);
+    if(f.architects.length) featureBits.push('design language inspired by ' + f.architects.join(' and '));
+
+    var gptNoun = isPhotoMode() ? 'an ultra-realistic architectural photograph (not a 3D render)' : 'a photorealistic architectural image';
+    var opener = state.competitionMode && state.conceptKeyword.trim()
+      ? 'Create ' + gptNoun + ' guided by the concept of "' + state.conceptKeyword.trim() + '": '
+      : 'Create ' + gptNoun + ' of ';
+    var s1 = opener + lead;
+    if(featureBits.length) s1 += ', featuring ' + featureBits.join(', ');
+    if(f.context) s1 += ', set in ' + article(f.context) + ' ' + f.context;
+    if(f.siteElements.length) s1 += ', with ' + f.siteElements.join(', ');
+    s1 += '.';
+
+    var s1b = fullFrameSentence(f.interior);
+
+    var groundingBits = [];
+    if(f.cadastralNotes) groundingBits.push('the site plan (지적도): ' + f.cadastralNotes);
+    if(f.sitePhotoNotes) groundingBits.push('the actual site photos: ' + f.sitePhotoNotes);
+    if(f.sketchupNotes) groundingBits.push('the SketchUp massing model: ' + f.sketchupNotes);
+    var s1c = groundingBits.length ? 'Base the design on ' + groundingBits.join('; ') + '.' : null;
+
+    var frameBits = [];
+    if(f.camera) frameBits.push(article(f.camera) + ' ' + f.camera);
+    if(f.lighting) frameBits.push(f.lighting);
+    var s2 = frameBits.length ? 'Frame it as ' + frameBits.join(', with ') + '.' : null;
+
+    var styleBits = [];
+    if(f.render) styleBits.push(f.render);
+    if(f.detail.length) styleBits = styleBits.concat(f.detail);
+    if(f.compStyle) styleBits.push(f.compStyle);
+    var s3 = styleBits.length ? (isPhotoMode() ? 'Photographic style: ' : 'Render style: ') + styleBits.join(', ') + '.' : null;
+
+    var s4 = state.extra.trim() || null;
+
+    return [aspectLead(), attachedRefSentence(), objectSentence(), s1, s1b, s1c, s2, safeZoneSentence(), s3, s4].filter(Boolean).join(' ');
+  }
+
+  // ---- 한글 번역본 (참고용). 영어 프롬프트와 같은 구조를, 칩의 ko 값과 한국어 문장 틀로 다시 조립한다. ----
+
+  function selectedArchitectsKo(){
+    return ['architectModern', 'architectContemporary', 'architectKorea'].reduce(function(acc, key){
+      return acc.concat(state[key]);
+    }, []);
+  }
+
+  function gatherFieldsKo(){
+    var type = state.type[0] || '건물';
+    return {
+      style: state.style[0],
+      floors: state.floors[0],
+      type: type,
+      interior: isInteriorType(selectedEns('type')[0] || ''),
+      materials: state.materials,
+      area: state.area[0],
+      context: state.context[0],
+      camera: state.camera[0],
+      lighting: state.lighting[0],
+      render: state.render[0],
+      detail: state.detail,
+      architects: selectedArchitectsKo(),
+      compStyle: state.competitionMode ? (state.compStyle[0] || null) : null,
+      siteElements: state.competitionMode ? state.siteElements : [],
+      cadastralNotes: state.cadastralNotes.trim(),
+      sitePhotoNotes: state.sitePhotoNotes.trim(),
+      sketchupNotes: state.sketchupNotes.trim()
+    };
+  }
+
+  function buildMJKo(){
+    var style = state.style[0];
+    var floors = state.floors[0];
+    var type = state.type[0] || '건물';
+    var interior = isInteriorType(selectedEns('type')[0] || '');
+    var materials = state.materials;
+    var area = state.area[0];
+    var context = state.context[0];
+    var camera = state.camera[0];
+    var lighting = state.lighting[0];
+    var render = state.render[0];
+    var detail = state.detail;
+    var architects = selectedArchitectsKo();
+    var compStyle = state.competitionMode ? (state.compStyle[0] || null) : null;
+    var siteElements = state.competitionMode ? state.siteElements : [];
+
+    var subjectCore = [interior ? null : floors, style, type].filter(Boolean).join(' ');
+    var subject = [camera, subjectCore].filter(Boolean).join(' ');
+    var parts = [];
+    if(state.competitionMode && state.conceptKeyword.trim()) parts.push('"' + state.conceptKeyword.trim() + '" 컨셉');
+    parts.push(subject);
+    parts.push(interior ? '방 전체가 프레임 안에 온전히 보이고, 벽과 천장이 잘리지 않음' : '건물 전체가 기초부터 지붕선까지 프레임 안에 온전히 보이고, 잘리지 않은 와이드 샷');
+    if(currentAspect().safe) parts.push('핵심 피사체는 가운데, 사방에 넉넉한 여백을 두어 잘려도 안전하게');
+    if(materials.length) parts.push(materials.join(', ') + (interior ? ' 실내 마감재' : ' 외장재'));
+    if(area) parts.push(area + ' 연면적');
+    if(state.cadastralNotes.trim()) parts.push('대지 형태: ' + state.cadastralNotes.trim());
+    if(state.sitePhotoNotes.trim()) parts.push('현장 조건: ' + state.sitePhotoNotes.trim());
+    if(state.sketchupNotes.trim()) parts.push('참고 매싱: ' + state.sketchupNotes.trim());
+    if(objectPhraseMJKo()) parts.push(objectPhraseMJKo());
+    if(architects.length) parts.push(architects.join(', ') + ' 스타일');
+    if(context) parts.push(context);
+    if(siteElements.length) parts.push('대지 요소: ' + siteElements.join(', '));
+    if(lighting) parts.push(lighting);
+    if(render) parts.push(render);
+    if(compStyle) parts.push(compStyle);
+    parts.push(detail.length ? detail.join(', ') : '고품질 전문 건축 사진');
+    if(state.extra.trim()) parts.push(state.extra.trim());
+
+    var line = parts.filter(Boolean).join(', ');
+    line += ' --ar ' + state.aspect + ' --v ' + state.version;
+    if(isPhotoMode()) line += ' --style raw';
+    if(state.chaos > 0) line += ' --chaos ' + state.chaos;
+    if(state.refImageUrl.trim()) line += ' --sref ' + state.refImageUrl.trim();
+    return line;
+  }
+
+  function buildGeminiKo(){
+    var f = gatherFieldsKo();
+    var mainPhrase = [f.interior ? null : f.floors, f.style, f.type].filter(Boolean).join(' ');
+    var sentences = [aspectLeadKo()];
+
+    var refSentenceKo = attachedRefSentenceKo();
+    if(refSentenceKo) sentences.push(refSentenceKo);
+    var objSentenceKo = objectSentenceKo();
+    if(objSentenceKo) sentences.push(objSentenceKo);
+
+    var lead = (state.competitionMode && state.conceptKeyword.trim()
+      ? '"' + state.conceptKeyword.trim() + '" 컨셉을 바탕으로 한, '
+      : '') + mainPhrase + (isPhotoMode() ? '의 극 사실 건축 사진입니다(3D 렌더가 아닌 실제 사진).' : '의 사실적인 건축 시각화 이미지입니다.');
+    sentences.push(lead);
+
+    if(f.materials.length) sentences.push('마감재는 ' + f.materials.join(', ') + (f.interior ? ' 등의 실내 마감입니다.' : ' 등의 외장재입니다.'));
+    if(f.area) sentences.push('연면적은 ' + f.area + '입니다.');
+    if(f.context) sentences.push(f.context + '에 위치합니다.');
+
+    sentences.push(f.interior
+      ? '방 전체가 프레임 안에 온전히 보이며, 벽과 천장이 가장자리에서 잘리지 않습니다.'
+      : '건물 전체가 기초부터 지붕선까지 프레임 안에 온전히 보이며, 가장자리에서 잘리는 부분이 없습니다.');
+
+    if(f.cadastralNotes) sentences.push('건물 배치는 다음 지적도(대지 형태)를 따릅니다: ' + f.cadastralNotes + '.');
+    if(f.sitePhotoNotes) sentences.push('첨부한 현장사진에 나타난 실제 대지 조건을 반영합니다: ' + f.sitePhotoNotes + '.');
+    if(f.sketchupNotes) sentences.push('첨부한 스케치업 백색 모델의 매스와 비례를 따릅니다: ' + f.sketchupNotes + '.');
+
+    if(f.camera || f.lighting){
+      var s2parts = [];
+      if(f.camera) s2parts.push(f.camera);
+      if(f.lighting) s2parts.push(f.lighting);
+      sentences.push('장면은 ' + s2parts.join(', ') + '(으)로 연출됩니다.');
+    }
+    var safeZoneKo = safeZoneSentenceKo();
+    if(safeZoneKo) sentences.push(safeZoneKo);
+    if(f.architects.length){
+      sentences.push('디자인은 ' + f.architects.join(', ') + '의 스타일에서 영감을 받습니다.');
+    }
+    if(f.siteElements.length){
+      sentences.push('대지에는 ' + f.siteElements.join(', ') + '이(가) 포함됩니다.');
+    }
+    var detailText = f.detail.length ? f.detail.join(', ') : null;
+    if(f.render || detailText){
+      sentences.push((isPhotoMode() ? '촬영 스타일: ' : '렌더 스타일: ') + [f.render, detailText].filter(Boolean).join(', ') + '.');
+    }
+    if(f.compStyle){
+      sentences.push(f.compStyle + '(으)로 표현됩니다.');
+    }
+    if(state.extra.trim()){
+      sentences.push(state.extra.trim());
+    }
+    return sentences.join(' ');
+  }
+
+  function buildChatGPTKo(){
+    var f = gatherFieldsKo();
+    var mainPhrase = [f.interior ? null : f.floors, f.style, f.type].filter(Boolean).join(' ');
+    var sentences = [aspectLeadKo()];
+
+    var refSentenceKo = attachedRefSentenceKo();
+    if(refSentenceKo) sentences.push(refSentenceKo);
+    var objSentenceKo = objectSentenceKo();
+    if(objSentenceKo) sentences.push(objSentenceKo);
+
+    var opener = (state.competitionMode && state.conceptKeyword.trim()
+      ? '"' + state.conceptKeyword.trim() + '" 컨셉을 바탕으로, '
+      : '') + mainPhrase + (isPhotoMode() ? '의 극 사실 건축 사진을 만들어주세요(3D 렌더가 아닌 실제 사진처럼).' : '의 사실적인 건축 이미지를 만들어주세요.');
+    sentences.push(opener);
+
+    var featureBits = [];
+    if(f.materials.length) featureBits.push(f.materials.join(', ') + (f.interior ? ' 실내 마감재' : ' 외장재'));
+    if(f.area) featureBits.push('연면적 ' + f.area);
+    if(f.architects.length) featureBits.push(f.architects.join(', ') + '에서 영감받은 디자인 언어');
+    if(featureBits.length) sentences.push(featureBits.join(', ') + '이(가) 드러나도록 해주세요.');
+
+    if(f.context) sentences.push('배경은 ' + f.context + '입니다.');
+    if(f.siteElements.length) sentences.push('대지에는 ' + f.siteElements.join(', ') + '이(가) 있습니다.');
+
+    sentences.push(f.interior
+      ? '방 전체가 프레임 안에 온전히 보이며, 벽과 천장이 가장자리에서 잘리지 않습니다.'
+      : '건물 전체가 기초부터 지붕선까지 프레임 안에 온전히 보이며, 가장자리에서 잘리는 부분이 없습니다.');
+
+    var groundingBits = [];
+    if(f.cadastralNotes) groundingBits.push('지적도: ' + f.cadastralNotes);
+    if(f.sitePhotoNotes) groundingBits.push('현장사진: ' + f.sitePhotoNotes);
+    if(f.sketchupNotes) groundingBits.push('스케치업 매싱 모델: ' + f.sketchupNotes);
+    if(groundingBits.length) sentences.push('다음을 바탕으로 디자인하세요: ' + groundingBits.join('; ') + '.');
+
+    var frameBits = [];
+    if(f.camera) frameBits.push(f.camera);
+    if(f.lighting) frameBits.push(f.lighting);
+    if(frameBits.length) sentences.push('구도: ' + frameBits.join(', ') + '.');
+    var safeZoneKo = safeZoneSentenceKo();
+    if(safeZoneKo) sentences.push(safeZoneKo);
+
+    var styleBits = [];
+    if(f.render) styleBits.push(f.render);
+    if(f.detail.length) styleBits = styleBits.concat(f.detail);
+    if(f.compStyle) styleBits.push(f.compStyle);
+    if(styleBits.length) sentences.push((isPhotoMode() ? '촬영 스타일: ' : '렌더 스타일: ') + styleBits.join(', ') + '.');
+
+    if(state.extra.trim()) sentences.push(state.extra.trim());
+
+    return sentences.join(' ');
+  }
+
+  var promptOutEl = document.getElementById('promptOut');
+  var promptOutKoEl = document.getElementById('promptOutKo');
+  var refImageHintEl = document.getElementById('refImageHint');
+  var uploadSummaryHintEl = document.getElementById('uploadSummaryHint');
+  function renderOutput(){
+    var text = state.platform === 'mj' ? buildMJ() : (state.platform === 'chatgpt' ? buildChatGPT() : buildGemini());
+    promptOutEl.textContent = text;
+    var textKo = state.platform === 'mj' ? buildMJKo() : (state.platform === 'chatgpt' ? buildChatGPTKo() : buildGeminiKo());
+    promptOutKoEl.textContent = textKo;
+    document.getElementById('mjOptions').style.display = state.platform === 'mj' ? 'block' : 'none';
+    var platformLabel = state.platform === 'chatgpt' ? 'ChatGPT' : (state.platform === 'gemini' ? 'Gemini' : 'Midjourney');
+    refImageHintEl.textContent = state.platform === 'mj'
+      ? '입력한 링크가 --sref 파라미터로 자동 추가됩니다.'
+      : '이 URL은 문장에 포함되지 않아요. ' + platformLabel + '에서는 이 이미지를 채팅에 직접 첨부하세요.';
+
+    var uploadCounts = [];
+    if(uploads.cadastral.length) uploadCounts.push('지적도 ' + uploads.cadastral.length + '장');
+    if(uploads.sitePhoto.length) uploadCounts.push('현장사진 ' + uploads.sitePhoto.length + '장');
+    if(uploads.sketchup.length) uploadCounts.push('스케치업 이미지 ' + uploads.sketchup.length + '장');
+    if(uploads.object.length) uploadCounts.push('사물 이미지 ' + uploads.object.length + '장');
+    if(uploadCounts.length){
+      var attachOrder = '지적도 → 현장사진 → 스케치업 → 사물 순서';
+      var attachTarget = state.platform === 'mj'
+        ? 'Midjourney 프롬프트 창에 이미지를 함께 드래그해 첨부하세요. (미드저니는 첨부 이미지를 이미지 프롬프트로 쓰기 때문에 확인 문장은 따로 넣지 않아요.)'
+        : platformLabel + ' 채팅창에 이미지를 ' + attachOrder + '로 첨부한 뒤 아래 문장을 붙여넣으세요. (프롬프트 맨 앞에 "첨부 이미지를 먼저 확인하라"는 문장이 자동으로 들어가 있어요.)';
+      uploadSummaryHintEl.textContent = uploadCounts.join(' · ') + ' 첨부됨 — ' + attachTarget;
+    } else {
+      uploadSummaryHintEl.textContent = '';
+    }
+
+    persist();
+  }
+
+  function readFilesAsDataURLs(fileList, cb){
+    var files = Array.prototype.slice.call(fileList);
+    var results = [];
+    var remaining = files.length;
+    if(remaining === 0){ cb(results); return; }
+    files.forEach(function(file, idx){
+      var reader = new FileReader();
+      reader.onload = function(e){
+        results[idx] = { name: file.name, dataUrl: e.target.result };
+        remaining--;
+        if(remaining === 0) cb(results.filter(Boolean));
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function renderThumbs(key, containerId, countId){
+    var container = document.getElementById(containerId);
+    container.innerHTML = '';
+    uploads[key].forEach(function(item, idx){
+      var thumb = document.createElement('div');
+      thumb.className = 'thumb';
+      var img = document.createElement('img');
+      img.src = item.dataUrl;
+      img.alt = item.name;
+      thumb.appendChild(img);
+      var removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.textContent = '×';
+      removeBtn.setAttribute('aria-label', '이미지 삭제');
+      removeBtn.addEventListener('click', function(){
+        uploads[key].splice(idx, 1);
+        renderThumbs(key, containerId, countId);
+        renderOutput();
+      });
+      thumb.appendChild(removeBtn);
+      container.appendChild(thumb);
+    });
+    var countEl = document.getElementById(countId);
+    countEl.textContent = uploads[key].length ? uploads[key].length + '장 첨부됨' : '';
+  }
+
+  function addFiles(fileList, key, containerId, countId){
+    if(!fileList || !fileList.length) return;
+    readFilesAsDataURLs(fileList, function(results){
+      uploads[key] = uploads[key].concat(results);
+      renderThumbs(key, containerId, countId);
+      renderOutput();
+    });
+  }
+
+  function wireUpload(inputId, key, containerId, countId, dropzoneId){
+    var input = document.getElementById(inputId);
+    input.addEventListener('change', function(){
+      addFiles(input.files, key, containerId, countId);
+      input.value = '';
+    });
+
+    var dropzone = dropzoneId ? document.getElementById(dropzoneId) : null;
+    if(dropzone){
+      var dragDepth = 0;
+      dropzone.addEventListener('dragover', function(e){
+        e.preventDefault();
+      });
+      dropzone.addEventListener('dragenter', function(e){
+        e.preventDefault();
+        dragDepth++;
+        dropzone.classList.add('drag-over');
+      });
+      dropzone.addEventListener('dragleave', function(){
+        dragDepth = Math.max(0, dragDepth - 1);
+        if(dragDepth === 0) dropzone.classList.remove('drag-over');
+      });
+      dropzone.addEventListener('drop', function(e){
+        e.preventDefault();
+        dragDepth = 0;
+        dropzone.classList.remove('drag-over');
+        var files = Array.prototype.filter.call(e.dataTransfer.files, function(f){
+          return f.type.indexOf('image/') === 0;
+        });
+        addFiles(files, key, containerId, countId);
+      });
+    }
+  }
+
+  var siteRefToggle = document.getElementById('siteRefToggle');
+  var siteRefBody = document.getElementById('siteRefBody');
+  function setSiteRefExpanded(expanded){
+    siteRefToggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    siteRefBody.hidden = !expanded;
+  }
+  siteRefToggle.addEventListener('click', function(){
+    setSiteRefExpanded(siteRefToggle.getAttribute('aria-expanded') !== 'true');
+  });
+  siteRefToggle.addEventListener('keydown', function(e){
+    if(e.key === 'Enter' || e.key === ' '){
+      e.preventDefault();
+      setSiteRefExpanded(siteRefToggle.getAttribute('aria-expanded') !== 'true');
+    }
+  });
+
+  wireUpload('cadastralFile', 'cadastral', 'cadastralThumbs', 'cadastralCount', 'cadastralDropzone');
+  wireUpload('sitePhotoFile', 'sitePhoto', 'sitePhotoThumbs', 'sitePhotoCount', 'sitePhotoDropzone');
+  wireUpload('sketchupFile', 'sketchup', 'sketchupThumbs', 'sketchupCount', 'sketchupDropzone');
+  wireUpload('objectFile', 'object', 'objectThumbs', 'objectCount', 'objectDropzone');
+
+  var cadastralNotesEl = document.getElementById('cadastralNotes');
+  cadastralNotesEl.value = state.cadastralNotes;
+  cadastralNotesEl.addEventListener('input', function(){ state.cadastralNotes = cadastralNotesEl.value; renderOutput(); });
+
+  var sitePhotoNotesEl = document.getElementById('sitePhotoNotes');
+  sitePhotoNotesEl.value = state.sitePhotoNotes;
+  sitePhotoNotesEl.addEventListener('input', function(){ state.sitePhotoNotes = sitePhotoNotesEl.value; renderOutput(); });
+
+  var sketchupNotesEl = document.getElementById('sketchupNotes');
+  sketchupNotesEl.value = state.sketchupNotes;
+  sketchupNotesEl.addEventListener('input', function(){ state.sketchupNotes = sketchupNotesEl.value; renderOutput(); });
+
+  var objectNotesEl = document.getElementById('objectNotes');
+  objectNotesEl.value = state.objectNotes;
+  objectNotesEl.addEventListener('input', function(){ state.objectNotes = objectNotesEl.value; renderOutput(); });
+
+  // 사물 → 건축 변환: 무엇을 옮길지 고르는 칩 (복수 선택)
+  var objectModeChipsEl = document.getElementById('objectModeChips');
+  function renderObjectModeChips(){
+    objectModeChipsEl.innerHTML = '';
+    OBJECT_MODES.forEach(function(m){
+      var chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'chip';
+      var isSel = state.objectModes.indexOf(m.key) !== -1;
+      if(isSel) chip.classList.add('selected');
+      chip.setAttribute('aria-pressed', isSel ? 'true' : 'false');
+      chip.innerHTML = '<span class="ko">' + m.ko + '</span><span class="en">' + m.hint + '</span>';
+      chip.addEventListener('click', function(){
+        var idx = state.objectModes.indexOf(m.key);
+        if(idx === -1) state.objectModes.push(m.key);
+        else state.objectModes.splice(idx, 1);
+        renderObjectModeChips();
+        renderOutput();
+      });
+      objectModeChipsEl.appendChild(chip);
+    });
+  }
+  renderObjectModeChips();
+
+  var platformToggle = document.getElementById('platformToggle');
+  platformToggle.querySelectorAll('button').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      platformToggle.querySelectorAll('button').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      state.platform = btn.getAttribute('data-platform');
+      renderOutput();
+    });
+  });
+  if(state.platform === 'prose'){ state.platform = 'gemini'; }
+  platformToggle.querySelectorAll('button').forEach(function(b){
+    b.classList.toggle('active', b.getAttribute('data-platform') === state.platform);
+  });
+
+  var aspectChipsEl = document.getElementById('aspectChips');
+  var aspectHintEl = document.getElementById('aspectHint');
+  function renderAspectChips(){
+    aspectChipsEl.innerHTML = '';
+    ASPECTS.forEach(function(a){
+      var chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'chip';
+      var isSel = a.ratio === state.aspect;
+      if(isSel) chip.classList.add('selected');
+      chip.setAttribute('aria-pressed', isSel ? 'true' : 'false');
+      chip.innerHTML = '<span class="ko">' + a.label + '</span><span class="en">' + a.px + '</span>';
+      chip.addEventListener('click', function(){
+        state.aspect = a.ratio;
+        renderAspectChips();
+        renderOutput();
+      });
+      aspectChipsEl.appendChild(chip);
+    });
+    var cur = currentAspect();
+    aspectHintEl.textContent = '선택: ' + cur.ratio + ' · 권장 ' + cur.px + 'px — 프롬프트에는 비율만 들어가요.' +
+      (cur.safe ? ' 인스타용은 피드·그리드에서 가장자리가 잘릴 수 있어, 핵심 피사체와 글자를 가운데에 두고 여백을 남기라는 문장이 함께 들어가요.' : '');
+  }
+  renderAspectChips();
+
+  var versionSelect = document.getElementById('versionSelect');
+  versionSelect.value = state.version;
+  versionSelect.addEventListener('change', function(){ state.version = versionSelect.value; renderOutput(); });
+
+  var chaosSlider = document.getElementById('chaosSlider');
+  var chaosValue = document.getElementById('chaosValue');
+  chaosSlider.value = state.chaos;
+  chaosValue.textContent = state.chaos;
+  chaosSlider.addEventListener('input', function(){
+    state.chaos = parseInt(chaosSlider.value, 10);
+    chaosValue.textContent = state.chaos;
+    renderOutput();
+  });
+
+  var extraInput = document.getElementById('extraInput');
+  extraInput.value = state.extra;
+  extraInput.addEventListener('input', function(){ state.extra = extraInput.value; renderOutput(); });
+
+  var refImageInput = document.getElementById('refImageInput');
+  refImageInput.value = state.refImageUrl;
+  refImageInput.addEventListener('input', function(){ state.refImageUrl = refImageInput.value; renderOutput(); });
+
+  var conceptBlock = document.getElementById('conceptBlock');
+  var conceptInput = document.getElementById('conceptInput');
+  conceptInput.value = state.conceptKeyword;
+  conceptInput.addEventListener('input', function(){ state.conceptKeyword = conceptInput.value; renderOutput(); });
+
+  var competitionToggle = document.getElementById('competitionToggle');
+  competitionToggle.checked = state.competitionMode;
+  conceptBlock.style.display = state.competitionMode ? 'block' : 'none';
+  competitionToggle.addEventListener('change', function(){
+    state.competitionMode = competitionToggle.checked;
+    conceptBlock.style.display = state.competitionMode ? 'block' : 'none';
+    persist();
+    renderSections();
+    renderOutput();
+  });
+
+  var presetBtn = document.getElementById('presetBtn');
+  var presetBtnSub = presetBtn.querySelector('.preset-btn-sub');
+  var presetBtnSubDefault = presetBtnSub.textContent;
+  presetBtn.addEventListener('click', function(){
+    state.competitionMode = true;
+    competitionToggle.checked = true;
+    conceptBlock.style.display = 'block';
+    state.lighting = ['골든아워'];
+    state.render = ['포토리얼'];
+    state.detail = ['수상작 건축사진 스타일', '필름 그레인 무드'];
+    state.camera = ['3/4 각도'];
+    state.compStyle = ['현상설계 실사 조감도'];
+    state.siteElements = ['조경형 계단 광장', '버스정류장/스트리트퍼니처'];
+    persist();
+    renderSections();
+    renderOutput();
+
+    presetBtn.classList.add('applied');
+    presetBtnSub.textContent = '적용됨 — 건축 유형·재료는 그대로 유지, 분위기만 반영했어요';
+    setTimeout(function(){
+      presetBtn.classList.remove('applied');
+      presetBtnSub.textContent = presetBtnSubDefault;
+    }, 2200);
+  });
+
+  var copyBtn = document.getElementById('copyBtn');
+  copyBtn.addEventListener('click', function(){
+    var text = promptOutEl.textContent;
+    function fallbackCopy(){
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus(); ta.select();
+      try{ document.execCommand('copy'); }catch(e){}
+      document.body.removeChild(ta);
+    }
+    function showCopied(){
+      copyBtn.textContent = '복사됨 ✓';
+      copyBtn.classList.add('copied');
+      setTimeout(function(){
+        copyBtn.textContent = '영어 프롬프트 복사';
+        copyBtn.classList.remove('copied');
+      }, 1400);
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(showCopied, function(){ fallbackCopy(); showCopied(); });
+    } else {
+      fallbackCopy(); showCopied();
+    }
+  });
+
+  var copyKoBtn = document.getElementById('copyKoBtn');
+  copyKoBtn.addEventListener('click', function(){
+    var text = promptOutKoEl.textContent;
+    function fallbackCopyKo(){
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus(); ta.select();
+      try{ document.execCommand('copy'); }catch(e){}
+      document.body.removeChild(ta);
+    }
+    function showCopiedKo(){
+      copyKoBtn.textContent = '복사됨 ✓';
+      copyKoBtn.classList.add('copied');
+      setTimeout(function(){
+        copyKoBtn.textContent = '한글 번역 복사';
+        copyKoBtn.classList.remove('copied');
+      }, 1400);
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(showCopiedKo, function(){ fallbackCopyKo(); showCopiedKo(); });
+    } else {
+      fallbackCopyKo(); showCopiedKo();
+    }
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', function(){
+    CATS.forEach(function(c){ state[c.key] = DEFAULTS[c.key] ? DEFAULTS[c.key].slice() : []; });
+    state.compStyle = [];
+    state.siteElements = [];
+    state.extra = '';
+    state.conceptKeyword = '';
+    state.refImageUrl = '';
+    state.chaos = 0;
+    state.aspect = '16:9';
+    state.cadastralNotes = '';
+    state.sitePhotoNotes = '';
+    state.sketchupNotes = '';
+    state.objectNotes = '';
+    state.objectModes = ['form', 'surface'];
+    objectNotesEl.value = '';
+    renderObjectModeChips();
+    renderAspectChips();
+    extraInput.value = '';
+    conceptInput.value = '';
+    refImageInput.value = '';
+    chaosSlider.value = 0;
+    chaosValue.textContent = '0';
+    cadastralNotesEl.value = '';
+    sitePhotoNotesEl.value = '';
+    sketchupNotesEl.value = '';
+    uploads.cadastral = [];
+    uploads.sitePhoto = [];
+    uploads.sketchup = [];
+    uploads.object = [];
+    renderThumbs('cadastral', 'cadastralThumbs', 'cadastralCount');
+    renderThumbs('sitePhoto', 'sitePhotoThumbs', 'sitePhotoCount');
+    renderThumbs('sketchup', 'sketchupThumbs', 'sketchupCount');
+    renderThumbs('object', 'objectThumbs', 'objectCount');
+    renderSections();
+    renderOutput();
+  });
+
+  renderSections();
+  renderOutput();
+})();
+</script>
+</body>
+</html>
